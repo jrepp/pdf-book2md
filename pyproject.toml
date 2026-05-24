@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-book2md"
+version = "0.1.0"
+description = "Standalone PDF book-to-Markdown extraction CLI with cleanup and chapter splitting"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Open source contributors" }
+]
+keywords = ["pdf", "markdown", "cli", "books", "extraction", "pymupdf4llm"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Text Processing :: Markup",
+  "Topic :: Utilities",
+]
+dependencies = [
+  "pymupdf4llm>=0.0.18",
+]
+
+[project.scripts]
+pdf-book2md = "pdf_extract_cli.cli:main"
+
+[project.urls]
+Documentation = "https://pypi.org/project/pdf-book2md/"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
