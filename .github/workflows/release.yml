@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    concurrency: release
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pdf-book2md
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Python Semantic Release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          OLD_TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo 'none')"
+
+          uv tool run python-semantic-release version --no-push
+
+          NEW_TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo 'none')"
+
+          if [ "$OLD_TAG" = "$NEW_TAG" ]; then
+            echo "No version change detected (tag: $NEW_TAG)"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version bumped from $OLD_TAG to $NEW_TAG"
+            git push origin main --follow-tags
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "version=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        if: steps.release.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          ESCAPED_VERSION=$(printf '%s\n' "$VERSION" | sed -e 's/[]\\/$*.^[]/\\&/g')
+          CHANGELOG_SECTION=$(awk "/^## ${ESCAPED_VERSION} /{flag=1; next} /^## /{flag=0} flag" CHANGELOG.md)
+
+          if [ -z "$CHANGELOG_SECTION" ]; then
+            CHANGELOG_SECTION="Release ${VERSION}"
+          fi
+
+          NOTES_FILE=$(mktemp)
+          printf "%s\n" "$CHANGELOG_SECTION" > "$NOTES_FILE"
+
+          gh release create "${VERSION}" \
+            --title "${VERSION}" \
+            --notes-file "$NOTES_FILE" \
+            --latest
+
+          rm -f "$NOTES_FILE"
+
+      - name: Build distribution packages
+        if: steps.release.outputs.released == 'true'
+        run: uv build
+
+      - name: Publish to PyPI
+        if: steps.release.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
