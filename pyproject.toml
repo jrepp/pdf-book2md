@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-book2md"
-version = "0.1.0"
+version = "1.0.0"
 description = "Standalone PDF book-to-Markdown extraction CLI with cleanup and chapter splitting"
 readme = "README.md"
 requires-python = ">=3.10"
