@@ -1,29 +1,58 @@
 # pdf-book2md
 
-`pdf-book2md` is a standalone installable Python CLI for turning PDF books and manuals into cleaned Markdown with structured chapter files.
+`pdf-book2md` turns PDF books and manuals into cleaned Markdown organized as
+chapter files. It is built for long-form, structured PDFs where you want a
+repeatable output tree for reading, search, indexing, or downstream processing.
 
+## Quick Start
 
-## Features
-
-- extract a single PDF book into Markdown
-- batch-process a directory of PDFs
-- preserve a deterministic cleanup pass for common PDF artifacts
-- split large book/manual-style documents into numbered chapter files
-- skip already-processed batch outputs unless `--force` is supplied
-- print machine-readable JSON summaries for automation
-- lazy-load `pymupdf4llm`, so tests and CLI help work without the runtime dependency installed
-
-## Install
+Install from PyPI:
 
 ```bash
 python -m pip install pdf-book2md
 ```
 
-From source:
+Extract one book:
 
 ```bash
-python3 -m pip install .
+pdf-book2md extract ./manual.pdf --output-dir ./out/manual/chapters
 ```
+
+Batch-process a directory:
+
+```bash
+pdf-book2md batch ./pdfs --output-root ./out
+```
+
+## What It Produces
+
+When chapter headings are detected, `pdf-book2md` writes numbered chapter files
+and preserves the source text as `full_document.md`:
+
+```text
+out/
+  manual/
+    chapters/
+      00_frontmatter.md
+      01_Chapter_1_Overview.md
+      02_Chapter_2_Setup.md
+      03_Appendix_A_Reference.md
+      full_document.md
+```
+
+If no chapter split is detected, the command writes a single `full_document.md`.
+
+## Features
+
+- Extract one PDF into cleaned Markdown.
+- Batch-process PDFs into per-document output directories.
+- Split book/manual-style documents into deterministic chapter files.
+- Preserve frontmatter separately when introductory material exists before the
+  first detected chapter.
+- Skip already-processed batch outputs unless `--force` is supplied.
+- Print JSON summaries for automation with `--json`.
+- Lazy-load `pymupdf4llm`, so tests and CLI help work without the runtime
+  extraction dependency installed.
 
 ## Usage
 
@@ -33,49 +62,43 @@ python3 -m pip install .
 pdf-book2md extract ./manual.pdf --output-dir ./out/manual/chapters
 ```
 
-If the document has detectable chapter headings, the command writes one file per
-chapter plus `full_document.md`. If no chapter split is detected, it writes a
-single `full_document.md`.
-
-Use `--skip-full-document` when you only want chapter files:
+Use `--skip-full-document` when you only want chapter files and do not need the
+combined Markdown copy:
 
 ```bash
 pdf-book2md extract ./manual.pdf --output-dir ./out/manual/chapters --skip-full-document
 ```
 
-### Batch directory
+### Batch Directory
 
 ```bash
 pdf-book2md batch ./pdfs --output-root ./out
 ```
 
-This writes per-document outputs like:
+Batch mode writes each input PDF under `OUTPUT_ROOT/<pdf-stem>/chapters/`.
+Existing outputs are skipped when the target `chapters/` directory already
+contains Markdown files.
 
-```text
-out/
-  manual/
-    chapters/
-      00_frontmatter.md
-      01_Chapter_1_Overview.md
-      02_Chapter_2_Setup.md
-      full_document.md
-```
-
-Batch mode skips PDFs that already have Markdown files under their target
-`chapters/` directory. Reprocess everything with:
+Reprocess existing outputs:
 
 ```bash
 pdf-book2md batch ./pdfs --output-root ./out --force
 ```
 
-### JSON summary
+Select PDFs with a custom glob:
+
+```bash
+pdf-book2md batch ./pdfs --output-root ./out --pattern "*guide*.pdf"
+```
+
+### JSON Output
 
 ```bash
 pdf-book2md batch ./pdfs --output-root ./out --json
 ```
 
-JSON output includes absolute input and output paths, processed documents, and
-skipped documents:
+The JSON summary includes absolute input and output paths, processed documents,
+and skipped documents:
 
 ```json
 {
@@ -93,6 +116,7 @@ status code `1`. Argument parsing errors exit with status code `2`.
 
 ```python
 from pathlib import Path
+
 from pdf_extract_cli import extract_pdf
 
 result = extract_pdf(Path("manual.pdf"), Path("out/manual/chapters"))
@@ -101,15 +125,24 @@ print(result.chapter_count)
 
 ## Development
 
+Install from source:
+
+```bash
+python3 -m pip install -e . --no-deps
+```
+
 Run tests:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-Editable install smoke test:
+Smoke-test the CLI:
 
 ```bash
-python3 -m pip install -e . --no-deps
 pdf-book2md --help
 ```
+
+Releases are managed with Python Semantic Release. Conventional commits on
+`main` determine whether a release is created; release builds publish through
+the dedicated GitHub environment named `pypi`.
