@@ -144,5 +144,6 @@ pdf-book2md --help
 ```
 
 Releases are managed with Python Semantic Release. Conventional commits on
-`main` determine whether a release is created; release builds publish through
-the dedicated GitHub environment named `pypi`.
+`main` determine whether a release is created; release builds publish to PyPI
+using trusted publishing for `.github/workflows/release.yml` on the `main`
+branch.

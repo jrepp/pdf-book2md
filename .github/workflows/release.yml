@@ -17,9 +17,6 @@ jobs:
     name: Semantic Release
     runs-on: ubuntu-latest
     concurrency: release
-    environment:
-      name: pypi
-      url: https://pypi.org/p/pdf-book2md
 
     steps:
       - name: Check out the repository
